@@ -9,8 +9,8 @@ import scala.annotation.tailrec
 
 class Challengers extends BaseSimulation {
 	val scn: ScenarioBuilder = scenario("Challengers Flood IO")
-//		.during(20 * 60) {
-    		.repeat(2) {
+		.during(20 * 60) {
+			//		.repeat(30) {
 			group("Main page") {
 				exec(http("/ (Main Page)")
 					.get("/")
@@ -57,12 +57,16 @@ class Challengers extends BaseSimulation {
 							css("span.radio").ofType[Node].findAll.transform((nodes: Seq[Node]) => {
 								@tailrec
 								def findMax(idx: Int, max: Int, key: String): (Int, String) = {
-									val labelText = nodes(idx).findChildNodeWithName("label").getTextContent.toInt
-									val inputValue = nodes(idx).findChildNodeWithName("input").getAttribute("value")
+									if (idx == nodes.length) (max, key)
+									else {
+										val labelText: Int = nodes(idx).findChildNodeWithName("label")
+											.getTextContent.toInt
+										val inputValue: String = nodes(idx).findChildNodeWithName("input")
+											.getAttribute("value")
 
-									if (idx == nodes.length - 1) (max, key)
-									else if (labelText > max) findMax(idx + 1, labelText, inputValue)
-									else findMax(idx + 1, max, key)
+										if (labelText > max) findMax(idx + 1, labelText, inputValue)
+										else findMax(idx + 1, max, key)
+									}
 								}
 
 								findMax(0, 0, "")
@@ -84,7 +88,8 @@ class Challengers extends BaseSimulation {
 							css("body.errors").notExists,
 							css("#challenger_step_id", "value")
 								.saveAs("stepId"),
-							css("#new_challenger > input:nth-of-type(3)", "value").saveAs("timeStamp"),
+							css("#new_challenger > input:nth-of-type(3)", "value")
+								.saveAs("timeStamp"),
 							css("input[id^=\"challenger_order\"]", "name")
 								.findAll.transform((names: Seq[String], session: Session) => {
 								val nextFormSeq: Seq[(String, Any)] = Seq(
@@ -134,7 +139,7 @@ class Challengers extends BaseSimulation {
 		}
 
 	setUp(
-		//		scn.inject(rampUsers(50) during(10 * 60))
-		scn.inject(atOnceUsers(1))
+		scn.inject(rampUsers(50) during (10 * 60))
+		//		scn.inject(atOnceUsers(1))
 	).protocols(httpConf)
 }
